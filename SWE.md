@@ -13,15 +13,17 @@ This guide is inspired by and based on the *IBM Full Stack Software Developer* s
 
 ## Content
 
-[1. An Overview of Software Engineering](#1-an-overview-of-software-engineering)
+[**1. An Overview of Software Engineering**](#1-an-overview-of-software-engineering)
 
-[2. Introduction to Cloud Computing](#2-introduction-to-cloud-computing)
+[**2. Introduction to Cloud Computing**](#2-introduction-to-cloud-computing)
 
-[3. HTML, CSS, and JavaScript](#3-html-css-and-javascript)
+[**3. HTML, CSS, and JavaScript**](#3-html-css-and-javascript)
 
-[4. Git and GitHub](#4-git-and-github)
+[**4. Git and GitHub**](#4-git-and-github)
 
-[5. React and the Front-End](#5-react-and-the-front-end)
+[**5. React and the Front-End**](#5-react-and-the-front-end)
+
+[**6. Node.js and Express for Back-End**](#6-nodejs-and-express-for-back-end)
 
 
 # 1. An Overview of Software Engineering
@@ -1128,10 +1130,10 @@ for (let i = 0; i < numbers.length; i++) {
 
 
 
-# 5.3 Hooks and Forms
+## 5.3 Hooks and Forms
 
 
-## 5.3.1 Hooks
+### 5.3.1 Hooks
 
 Hooks are functions that allow you to use state and other React features in functional components.
 
@@ -1177,7 +1179,7 @@ export default toggleButton;
 ```
 
 
-## 5.3.2 API Calls
+### 5.3.2 API Calls
 
 **Application Programming Interface (API)** allows the application to exchange data with external services.
 
@@ -1205,7 +1207,7 @@ axios.get(url)
 ```
 
 
-## 5.3.3 Forms
+### 5.3.3 Forms
 
 **Form handling**
 
@@ -1250,7 +1252,7 @@ export default function App() {
 
 - **Store**: All current states in the app.
 - **Actions**: Object that indicates state change intent.
-- **Reducers**: Specifies how to change the state.
+- **Reducers**: Specifies how to change the state. It receives the current state and action, and returns a new state after performing the action.
 - **Dispatch**: Takes an action creator function to return the action and send the object to store.
 
 ### 5.4.2 Async
@@ -1293,6 +1295,263 @@ npm install @reduxjs/toolkit
 
 **Integration**:
 
-- `configureStore()`
+- `configureStore()`: Slice reducer added to Redux store.
+
+- `combineReducers()`: Combine multiple reducers into a single reducer.
+
+- Actions delegated to appropriate slice reducer.
+
+
+
+
+
+# 6. Node.js and Express for Back-End
+
+**Node.js** is a run-time environment on the server-side JavaScript applications. **Express** is a server-side JavaScript framework that runs on top of Node.js.
+
+
+## 6.1 Server-Side JavaScript
+
+
+### 6.1.1 Basic Concepts
+
+**Types of servers**
+- **Database servers**: House, retrieve, and deliver data.
+- **Web and HTTP servers**: Serve web pages and handle HTTP requests (give HTTP response).
+- **Application servers**: Host and deliver the application through HTTP, sit between a database and a web server.
+
+
+**Runtime environments**: Like a mini OS, it provides the environment for the application to run.
+
+Why Node.js? It runs on Chrome's V8 engine, which also runs on the front-end browser.
+
+**Back-end responsibilities**: Load (concurrent requests) and Scalability (handle changes in load), Security, Authentication, Walware Detection.
+
+
+### 6.1.2 Import and Require
+
+**Module specifications** are the conventions and standards to create packages. **CommonJS** and **ES** are two of them.
+
+**CommonJS and Require**:
+
+- `require()` can be called anywhere.
+- Dynamic, binding errors identified at run-time.
+- Synchronous, blocking.
+
+```js
+// message.js
+module.exports = "Hello, world!";
+```
+
+```js
+// main.js
+const msg = require('./message.js');
+console.log(msg);
+```
+
+**ES and Import**:
+
+- `import` can only be called at the top of the file.
+- Static, binding errors identified at compile-time.
+- Asynchronous, non-blocking.
+
+```js
+// message.mjs
+const a = 1;
+export { a as "myValue" };
+```
+
+```js
+// main.mjs
+import { myValue } from './message.mjs';
+console.log(myValue);
+```
+
+### 6.1.3 Node.js Modules
+
+Create a simple server using Node.js.
+
+```js
+let server = http.createServer((request, response) => {
+    let body = "Hello, world!";
+    response.writeHead(200, { 
+        "Content-Length": body.length,
+        "Content-Type": "text/plain"
+    });
+    response.end(body);
+});
+
+server.listen(8080);
+```
+
+**package.json**: To specify a different main file, relative path to the Node.js script. NPM (Node Package Manager) requires the name and version.
+
+```json
+{
+    "name": "mod-today",
+    "version": "1.0.0",
+    "main": "./lib/today",
+    "license": "Apache-2.0",
+}
+```
+
+**npm**: To install dependencies, run:
+
+```bash
+npm install [-g] <package_name>
+```
+
+This will create a `node_modules` folder and a `package-lock.json` file. The `-g` flag installs the package globally.
+
+
+
+## 6.2 Asynchronous I/O with Callbacks
+
+
+**Application calls http.request()**:
+
+1. Application calls http.request()
+2. Node.js sends the request message to the web server
+3. Node.js returns the response message to the application, which does not contain the response body.
+4. Node.js receives the response body from the web server.
+5. Node.js starts callback to handle web server response.
+
+### 6.2.1 http.request()
+
+```js
+http.request(options, function(response) {...})
+```
+
+Options need *at least* host ('w1.weather.gov') and path('xml/current_obs/KSFO.xml').
+
+```js
+const options = {
+    host: 'w1.weather.gov',
+    port: 80,
+    path: '/xml/current_obs/KSFO.xml',
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/xml',
+        'Content-Length': data.length
+    }
+}
+```
+
+The callback function (optional) is called when the response is received.
+
+**Data** event is emitted when the response body is received.
+
+```js
+response.on('data', function(chunk) {
+    console.log(chunk.toString());
+})
+```
+
+**End** event is emitted when the response body is fully received.
+
+```js
+response.on('end', function() {
+    console.log('No more data');
+})
+```
+
+**Error** event is emitted when an error occurs.
+
+```js
+response.on('error', function(error) {
+    console.error(error);
+})
+response.end();
+```
+
+**Two callback functions**: If the main application calls `http.request()`, two callback functions are involved:
+- The custom module has a callback function to handle the HTTP response from `http.request()`.
+- The main application has a callback function to handle the result captured in the first callback function.
+
+
+```js
+let weather = required('./weather');
+let location = 'KSFO';
+
+weather.current = (location, function(temp_f {
+    console.log('Temperature at ${location} is ${temp_f} degree F.');
+});
+```
+
+```js
+export.current = (location, resultCallback) {
+    ...
+    http.request(options, function(response) {
+        ...
+        response.on('end', function() {
+            resultCallback(...);
+        });
+    }).end();
+}
+```
+
+### 6.2.2 Promises
+
+**Promises** are objects returned by an asynchronous method. They have three states:
+- Pending: initial state.
+- Fulfilled: operation completed successfully.
+- Rejected: operation failed.
+
+```js
+let promise = new Promise(function(resolve, reject) {
+    ...
+});
+
+promise.then(function(result) {
+    ... // fulfilled
+}).catch(function(error) {
+    ... // rejected
+});
+```
+
+
+### 6.2.3 Async/Await
+
+**Async/Await** allows for asynchronous code to be written in a synchronous manner.
+
+```js
+async function fetchData() {
+    try {
+        let response = await fetch('https://api.example.com/data');
+        let data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+fetchData();
+```
+
+**More Axios**: 
+
+```js
+const axios = require('axios');
+
+const data = {
+    name: 'John',
+    age: 30
+}
+
+axios.post('https://api.example.com/data', data)
+    .then(response => {
+        console.log(response.data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+```
+
+Async/Await handles HTTP requests efficiently. Await pauses function execution for POST requests.
+
+
+
+
+## 6.3 Express
 
 
