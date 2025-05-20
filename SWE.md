@@ -25,6 +25,7 @@ This guide is inspired by and based on the *IBM Full Stack Software Developer* s
 
 [**6. Node.js and Express for Back-End**](#6-nodejs-and-express-for-back-end)
 
+[**7. Python**](#7-python)
 
 # 1. An Overview of Software Engineering
 
@@ -1553,5 +1554,575 @@ Async/Await handles HTTP requests efficiently. Await pauses function execution f
 
 
 ## 6.3 Express
+
+
+### 6.3.1 Web Frameworks
+
+Node.js is not a framework, but a runtime environment that executes JavaScript code on a server. Node.js requires a web framework to utilize it.
+
+Two approaches to build back-end (not mutually exclusive):
+- **Model-View-Controller (MVC)**: Separate the application into three layers: Model, View, and Controller. For apps that need separation of the data, data representation, and manipulation.
+    - Koa, Express, Django, NestJS.
+- **Representational State Transfer Application Programming Interface (REST API)**: Use HTTP methods to manipulate resources. Allows multiple servers to communicate with each other. Client and server code are independent.
+
+
+Two purposes of **Express**:
+- As an API
+- Setup template for Server-Side Rendering (SSR)
+
+
+### 6.3.2 Start with Express
+
+How to start with Express?
+1. Declare Express as a dependency in the package manifest of a Node.js object.
+    - Create a `package.json` file.
+    - Containing name, version, description, main, and dependencies.
+    ```json
+    {
+        "name": "demo",
+        "version": "1.0.0",
+        "description": "Retrive current weather from the web server",
+        "main": "app.js",
+        "dependencies": {
+            "express": "4.18.2"
+        }
+    }
+    ```
+2. Run the npm command to download missing modules.
+    - `npm install`, modules will be downloaded to `node_modules` folder.
+3. Import the Express module and create an Express application.
+    ```js
+    const express = require('express');
+    const app = express();
+    ```
+4. Create a new route handler.
+    ```js
+    app.get('temperature/:location_code', function(request, response) {
+        let location = request.params.location_code;
+        weather.current(location, function(error, temp_f) {
+            ...
+        });
+    });
+    ```
+5. Start an HTTP server on a port.
+
+
+### 6.3.3 Routing, Middleware, and Templating
+
+**Routing**: handle different routes and requests.
+
+```js
+const express = require('express');
+const app = express();
+
+let userRouter = express.Router();
+let itemRouter = express.Router();
+
+app.use('/users', userRouter);
+app.use('/items', itemRouter);
+
+userRouter.get('/about/:id', function(request, response) {
+    response.send('User ' + request.params.id);
+});
+
+userRouter.get('/details/:id', function(request, response) {
+    response.send('User details' + request.params.id);
+});
+
+itemRouter.get('/about/:id', function(request, response) {
+    response.send('Item ' + request.params.id);
+});
+
+itemRouter.get('/details/:id', function(request, response) {
+    response.send('Item details' + request.params.id);
+});
+
+app.listen(3000, () => {
+    console.log('Server is running on port 3000');
+});
+```
+
+```plaintext
+localhost:3000/users/about/123
+User 123
+
+localhost:3000/items/about/456
+Item 456
+
+localhost:3000/items/details/456
+Item details 456
+```
+
+
+**Middleware**: functions that have the access to the request object (req), the response object (res), and the next function in the application's request-response cycle.
+
+**1. Application-level middleware** is bounded with `app.use()`.
+
+```js
+app.use(function(request, response, next) {
+    if (request.query.password !== 'secret123') {
+        return response.status(402).send('Unauthorized');
+    } else {
+        console.log('Time:', Date.now());
+        next();
+    }
+});
+```
+
+**2. Route-level middleware** is bounded with `router.use()`.
+
+```js
+let userRouter = express.Router();
+
+userRouter.use(function(request, response, next) {
+    ...
+    next();
+});
+```
+
+**3. Error-handling middleware** is bounded with `app.use()` or `router.use()`.
+
+```js
+app.use(function(error, request, response, next) {
+    if (request.params.id === '1') {
+        throw new Error('Admin login attempted');
+    } else {
+        next();
+    }
+});
+
+app.use(function(error, request, response, next) {
+    if (error) {
+        response.status(500).send(error.toString());
+    } else {
+        next();
+    }
+});
+```
+
+**4. Built-in middleware**: for static files, JSON, cookie parser, etc.
+
+```js
+app.use(express.static('cad220_staticfiles'));
+```
+
+You can also define your own middleware.
+
+```js
+function logTime(request, response, next) {
+    console.log('Time:', Date.now());
+    next();
+}
+
+app.use(logTime);
+```
+
+
+**Templating**: Render dynamic content.
+
+```js
+const express = require('express');
+const app = express();
+const expressReactViews = require('express-react-views');
+
+const jsxEngine = expressReactViews.createEngine();
+
+app.set('views engine', 'jsx');
+app.set('views', 'myviews');
+
+app.engine('jsx', jsxEngine);
+
+app.get('/:name', function(request, response) {
+    response.render('index', { name: request.params.name });
+});
+
+app.listen(3000, () => {
+    console.log('Server is running on port 3000');
+});
+```
+
+
+### 6.3.4 Authentication and Authorization
+
+**Authentication**: Verify user credentials.
+
+**Authorization**: Determine what resources a user has access to.
+
+There are three popular authentication methods:
+
+1. Session-based
+    - User logs in with a username and password.
+    - Credentials are checked against the database.
+    - Session ID created, stored in database and browser cookie.
+    - Session ID destroyed on logout or expiration.
+
+```js
+const express = require('express');
+const session = require('express-session');
+const app = express();
+
+// Middleware to set up session management
+app.use(session({
+  secret: 'secret-key', // Replace with a strong secret key
+  resave: false, // Whether to save the session data if there were no modifications
+  saveUninitialized: true, // Whether to save new but not modified sessions
+  cookie: { secure: false } // Set to true in production with HTTPS
+}));
+
+// POST endpoint for handling login
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  // Simulated user authentication (replace with actual logic)
+  if (username === 'user' && password === 'password') {
+    req.session.user = username;  // Store user information in session
+    res.send('Logged in successfully');
+  } else {
+    res.send('Invalid credentials');
+  }
+});
+
+// GET endpoint for accessing dashboard
+app.get('/dashboard', (req, res) => {
+  if (req.session.user) {
+    res.send(`Welcome ${req.session.user}`);  // Display welcome
+  } else {
+    res.send('Please log in first');
+  }
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+```
+2. Token-based
+    - Token contains: **Header**, **Payload**, **Signature**.
+        - Header: type of token and encryption algorithm.
+        - Payload: data, e.g. user ID, expiration time.
+        - Signature: encrypted hash of the header and payload.
+    - Token is stored in the browser cookie (encrypted).
+    - Token is sent to the server for authentication.
+    - Server verifies the token.
+
+**JWT**: JSON Web Token.
+
+```js
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.json());
+const secretKey = 'your-secret-key'; // Replace with a strong secret key
+
+// POST endpoint for user login and JWT generation
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  // Simulated user authentication
+  if (username === 'user' && password === 'password') {
+    // Generate JWT with username payload
+    const token = jwt.sign({ username }, secretKey, { expiresIn: '1h' });
+    res.json({ token }); // Send token as JSON response
+  } else {
+    res.send('Invalid credentials');
+  }
+});
+
+// GET endpoint to access protected resource (dashboard)
+app.get('/dashboard', (req, res) => {
+  // Get token from Authorization header
+  const token = req.headers['authorization'];
+  if (token) {
+    // Verify JWT token
+    jwt.verify(token, secretKey, (err, decoded) => {
+      if (err) {
+        res.send('Invalid token');
+      } else {
+        // Token is valid, send welcome message with username
+        res.send(`Welcome ${decoded.username}`);
+      }
+    });
+  } else {
+    res.send('Token missing');
+  }
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+```
+
+3. Password-less
+    - Biometric authentication, magic link, one-time password, etc.
+    - App generates a challenge, encrypted by the public key.
+    - Private key decrypts the challenge.
+    - User signs the decrypted challenge.
+    - App verifies the signature.
+
+```js
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const app = express();
+app.use(bodyParser.json());
+const users = {}; // In-memory storage for demo purposes
+
+// Endpoint to request access and send verification code via email
+app.post('/request-access', (req, res) => {
+  const { email } = req.body;
+  // Generate verification code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Store the code in memory (users object)
+  users[email] = code;
+  // Simulated email sending (for demonstration)
+  console.log(`Sending code ${code} to ${email}`);
+  res.send('Code sent to your email');
+});
+
+// Endpoint to verify the received code
+app.post('/verify-code', (req, res) => {
+  const { email, code } = req.body;
+  // Compare the received code with stored code for the email
+  if (users[email] === code) {
+    res.send('Access granted');
+  } else {
+    res.send('Invalid code');
+  }
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+```
+
+Let's take a closer look at the JWT example.
+
+```js
+const express = require('express');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = 'your-secret-key';
+
+const app = express();
+
+app.use(express.json());
+
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    if (username === 'user' && password === 'password') {
+        const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token });
+    } else {
+        res.status(401).json({ error: 'Invalid credentials' });
+    }
+});
+```
+
+The app POSTs the token to the server. Then, the server verifies the token. The app should then GET the protected resource.
+
+```js
+app.get('/employee', (req, res) => {
+    let token = req.headers['Authorization'];
+    if (!token) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    if (token.startsWith('Bearer ')) {
+        tokenValue = token.slice(7, token.length).trimLeft();
+    }
+
+    // JWT token starts with 'Bearer '
+    jwt.verify(tokenValue, JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        const verificationStatus = {
+            jwt.verify(tokenValue, JWT_SECRET);
+            if (verificationStatus.user === 'user') {
+                return res.status(200).json({
+                    message: 'Employee details fetched successfully',
+                    data: {
+                        name: 'John Doe',
+                        role: 'Software Engineer'
+                    }
+                });
+        }
+    }
+});
+```
+
+> In reality, you should never hardcode the secret key in the code. We will introduce that in later sections.
+
+
+### 6.3.5 Best Practices
+
+Although Express does not require a specific structure, it is a good practice to follow some guidelines.
+
+```
+/project/
+    - /node_modules/: Contain packages, automatically created by npm install.
+    - /config/: Database connections, environment variables, API keys.
+    - /models/: Data models, specify the type of data stored.
+    - /routes/: Routes for all entities, one file for each logical set of routes.
+    - /views/: Templates files, which dynamically generate HTML, CSS, JS.
+    - /public/: Static files, e.g. images, HTTP, CSS, JS. Should have own subfolder.
+    - app.js: Main config for application.
+    - routes.js: Central location to access routes. Need to IMPORT all files from /routes and EXPORT them as a single object to app.js.
+    - package.json: List of dependencies, scripts, and metadata.
+```
+
+**Naming Routes**:
+
+| HTTP method and route | Action |
+|------------------------|--------|
+| GET /users | Get all users |
+| GET /users/:id | Get one user by ID |
+| POST /users | Create a new user |
+| PUT /users/:id | Update a user by ID |
+| DELETE /users/:id | Delete a user by ID |
+
+**HTTP codes**:
+
+| Code | Description |
+|------|-------------|
+| 200s | OK |
+| 300s | Resource has been moved |
+| 400s | Client side error |
+| 500s | Server side error |
+
+
+**Test REST APIs**:
+- Blackbox test (test as a whole)
+- Mocha framework contains a module SuperTest
+
+
+# 7. Python
+
+> Python is my favorite language. I write Python on a *daily basis* and I'm very proficient in it. Since some programming proficiency is assumed, unfortunately I may skip most concepts.
+
+> However, if you are new to programming, I would recommend the book *Python Crash Course* by Eric Matthes. 
+
+> By the way, for advanced programmers, I recommend *Computer Systems: A Programmer's Perspective* by Randal Bryant and David O'Hallaron. It is a great book to understand how computers work and make one a better programmer (for any programming language).
+
+
+## 7.1 Basic Pandas
+
+**Data loading**: can be used for csv, json, excel, etc.
+
+```python
+import pandas as pd
+
+df = pd.read_csv('data.csv')
+```
+
+**Series**: one-dimensional array.
+
+```python
+import pandas as pd
+
+s = pd.Series([1, 2, 3, 4, 5])
+
+print(s[3])
+print(s.iloc[3])
+print(s.loc[1:4])
+```
+
+**Series attributes and methods**
+
+- `values`: Returns the Series data as a NumPy array.
+- `index`: Returns the index (labels) of the Series.
+- `shape`: Returns a tuple representing the dimensions of the Series.
+- `size`: Returns the number of elements in the Series.
+- `mean()`, `sum()`, `min()`, `max()`: Calculate summary statistics of the data.
+- `unique()`, `nunique()`: Get unique values or the number of unique values.
+- `sort_values()`, `sort_index()`: Sort the Series by values or index labels.
+- `isnull()`, `notnull()`: Check for missing (NaN) or non-missing values.
+- `apply()`: Apply a custom function to each element of the Series.
+
+**DataFrame**: two-dimensional array.
+
+```python
+data = {
+    'Name': ['Alice', 'Bob', 'Charlie'],
+    'Age': [25, 30, 35],
+    'City': ['New York', 'Los Angeles', 'Chicago']
+}
+
+df = pd.DataFrame(data)
+
+print(df['Name'])
+print(df.iloc[2]) # position
+print(df.loc[2]) # label
+```
+
+Slicing:
+
+```python
+print(df[['Name', 'Age']])
+print(df[1:3])
+```
+
+Find unique elements:
+
+```python
+unique_ages = df['Age'].unique()
+```
+
+Conditional filtering:
+
+```python
+high_above_102 = df[df['Age'] > 25]
+```
+
+Save dataframes:
+
+```python
+df.to_csv('trading_data.csv', index=False)
+```
+
+**Dataframe attributes and methods**
+
+- `shape`: Returns the dimensions (number of rows and columns) of the DataFrame.
+- `info()`: Provides a summary of the DataFrame, including data types and non-null counts.
+- `describe()`: Generates summary statistics for numerical columns.
+- `head()`, `tail()`: Displays the first or last n rows of the DataFrame.
+- `mean()`, `sum()`, `min()`, `max()`: Calculate summary statistics for columns.
+- `sort_values()`: Sort the DataFrame by one or more columns.
+- `groupby()`: Group data based on specific columns for aggregation.
+- `fillna()`, `drop()`, `rename()`: Handle missing values, drop columns, or rename columns.
+- `apply()`: Apply a function to each element, row, or column of the DataFrame.
+
+
+## 7.2 Numpy
+
+**1D Array**:
+
+```python
+import numpy as np
+
+a = np.array([1, 2, 3, 4, 5])
+```
+
+**2D Array**:
+
+```python
+b = np.array([[1, 2, 3], [4, 5, 6]])
+```
+
+**Array attributes**:
+- `ndim`: Represents the number of dimensions or "rank" of the array.
+- `shape`: Returns a tuple indicating the number of rows and columns in the array.
+- `size`: Returns the total number of elements in the array.
+- `dtype`: Returns the data type of the elements in the array.
+
+```python
+print(b.ndim) # 2
+print(b.shape) # (2, 3)
+print(b.size) # 6
+print(b.dtype) # int64
+```
+
+
+
+
+
+
+
+
 
 
